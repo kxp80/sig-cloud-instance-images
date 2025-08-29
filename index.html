@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Social Interactive Gallery</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .gallery-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+            font-size: 2.5rem;
+            font-weight: 300;
+        }
+
+        /* Slider Styles */
+        .slider-container {
+            position: relative;
+            width: auto;
+            height: 35vh;
+            margin: 0 auto 40px;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            aspect-ratio: 4/3;
+        }
+
+        .slider {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slider-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
+        }
+
+        .slider-image.current {
+            transform: translateY(0);
+            z-index: 2;
+        }
+
+        .slider-image.next {
+            transform: translateY(100%);
+            z-index: 1;
+        }
+
+        .slider-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle,rgba(255, 255, 255, 0) 0%, rgba(0, 0, 0, 0.5) 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 15px 20px 20px 15px;
+            cursor: pointer;
+            z-index: 10;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+
+        .slider-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .slider-like-section {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Like System Integration */
+        .like-button-container {
+            position: relative;
+            background: rgba(0, 0, 0, 0.3);
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .like-button-container:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .like-button-container:active {
+            transform: scale(0.95);
+        }
+
+        .heart-icon {
+            font-size: 25px;
+            color: #888;
+            transition: color 0.3s ease, filter 0.3s ease;
+            z-index: 2;
+        }
+
+        .heart-icon.liked {
+            color: #ff4757;
+            filter: drop-shadow(0 0 8px rgba(255, 71, 87, 0.5));
+        }
+
+        .heart-icon.pulse {
+            animation: heartPulse 0.6s ease-out;
+        }
+
+        @keyframes heartPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .counter-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 20px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, .8));
+            transition: transform 0.2s ease, filter .2s ease-in;
+            pointer-events: none;
+        }
+
+        .counter-container.pulse {
+            transform: translate(-50%, -50%) scale(1.3);
+            filter: drop-shadow(4px 4px 4px rgba(0, 0, 0, .5));
+        }
+
+        .counter-digit {
+            position: relative;
+            width: 10px;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .digit-strip {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+            transition: transform 0.6s cubic-bezier(0.68, -0.6, 0.32, 1.6);
+        }
+
+        .digit {
+            width: 100%;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .slider-info-section {
+            text-align: right;
+        }
+
+        .slider-image-name {
+            font-size: 22px;
+            font-weight: 300;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .slider-image-views {
+            font-size: 14px;
+            opacity: 0.9;
+            font-weight: 500;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        /* Gallery Grid */
+        .gallery-grid-container {
+            height: 45vh;
+            overflow-y: auto;
+            border-radius: 12px;
+            background: #fff;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            padding: 15px;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+        }
+
+        .thumbnail {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            cursor: pointer;
+            aspect-ratio: 4/3;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .thumbnail:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.2);
+        }
+
+        .thumbnail:hover img {
+            transform: scale(1.1);
+        }
+
+        .thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.4s ease;
+            background-color: #f0f0f0;
+        }
+
+        .thumbnail img[data-src] { 
+            opacity: 0.6; 
+            filter: blur(1px);
+        }
+        
+        .thumbnail img:not([data-src]) { 
+            opacity: 1; 
+            filter: none;
+        }
+
+        .image-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .thumbnail:hover .image-overlay {
+            opacity: 1;
+        }
+
+        .like-section { 
+            display: flex; 
+            justify-content: flex-start; 
+        }
+
+        .thumbnail .like-button-container {
+            width: 40px;
+            height: 40px;
+        }
+
+        .thumbnail .heart-icon {
+            font-size: 18px;
+        }
+
+        .thumbnail .counter-container {
+            height: 24px;
+        }
+
+        .thumbnail .counter-digit {
+            width: 8px;
+        }
+
+        .thumbnail .digit-strip {
+            font-size: 11px;
+        }
+
+        .thumbnail .digit {
+            height: 24px;
+        }
+
+        .info-section { 
+            text-align: right; 
+        }
+        
+        .image-name { 
+            font-size: 14px; 
+            font-weight: 500; 
+            margin-bottom: 3px; 
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        
+        .image-views { 
+            font-weight: 600; 
+            font-size: 11px; 
+            opacity: 0.9; 
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.active { 
+            display: flex; 
+        }
+
+        .modal-content {
+            position: relative;
+            max-width: 90vw;
+            max-height: 90vh;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 3px solid #fff;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .modal img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.6) 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 30px;
+            pointer-events: none;
+        }
+
+        .modal-like-section { 
+            display: flex; 
+            justify-content: flex-start; 
+            pointer-events: all; 
+        }
+
+        .modal .like-button-container {
+            width: 70px;
+            height: 70px;
+        }
+
+        .modal .heart-icon {
+            font-size: 30px;
+        }
+
+        .modal .counter-container {
+            height: 35px;
+        }
+
+        .modal .counter-digit {
+            width: 12px;
+        }
+
+        .modal .digit-strip {
+            font-size: 16px;
+        }
+
+        .modal .digit {
+            height: 35px;
+        }
+
+        .modal-info-section { 
+            text-align: right; 
+        }
+        
+        .modal-image-name { 
+            font-size: 28px; 
+            font-weight: 300; 
+            margin-bottom: 5px; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8); 
+        }
+        
+        .modal-image-views { 
+            font-size: 16px; 
+            font-weight: 500; 
+            opacity: 0.9; 
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8); 
+        }
+
+        .loading-indicator { 
+            text-align: center; 
+            padding: 20px; 
+            color: #666; 
+            font-size: 16px; 
+        }
+        
+        .loading-spinner { 
+            display: inline-block; 
+            width: 20px; 
+            height: 20px; 
+            border: 3px solid #f3f3f3; 
+            border-top: 3px solid #4CAF50; 
+            border-radius: 50%; 
+            animation: spin 1s linear infinite; 
+            margin-left: 10px; 
+        }
+        
+        @keyframes spin { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
+
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            h1 { font-size: 2rem; }
+            .gallery { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+            .slider-container { height: 40vh; }
+            .gallery-grid-container { height: 50vh; }
+            .modal-overlay { padding: 20px; }
+            .modal-content { max-width: 95%; max-height: 95%; }
+        }
+
+        @media (max-width: 480px) {
+            .gallery { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+            .like-button-container { width: 50px; height: 50px; }
+            .heart-icon { font-size: 20px; }
+            .slider-image-name { font-size: 18px; }
+            .modal-image-name { font-size: 22px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="gallery-container">
+        <h1>Advanced Social Gallery</h1>
+        
+        <!-- Slider Section -->
+        <div class="slider-container">
+            <div class="slider" id="imageSlider">
+                <img class="slider-image current" id="sliderImageCurrent" src="" alt="">
+                <img class="slider-image next" id="sliderImageNext" src="" alt="">
+                <div class="slider-overlay" onclick="openModalFromSlider()">
+                    <div class="slider-like-section">
+                        <button class="like-button-container" id="sliderLikeContainer" onclick="toggleSliderLike(event)">
+                            <i class="fas fa-heart heart-icon" id="sliderHeartIcon"></i>
+                            <div class="counter-container" id="sliderCounterContainer"></div>
+                        </button>
+                    </div>
+                    <div class="slider-info-section">
+                        <div class="slider-image-name" id="sliderImageName"></div>
+                        <div class="slider-image-views" id="sliderImageViews"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gallery Grid Container -->
+        <div class="gallery-grid-container">
+            <div class="gallery" id="imageGallery"></div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="imageModal">
+        <div class="modal-content">
+            <img id="modalImage" src="" alt="">
+            <div class="modal-overlay">
+                <div class="modal-like-section">
+                    <button class="like-button-container" id="modalLikeContainer" onclick="toggleModalLike(event)">
+                        <i class="fas fa-heart heart-icon" id="modalHeartIcon"></i>
+                        <div class="counter-container" id="modalCounterContainer"></div>
+                    </button>
+                </div>
+                <div class="modal-info-section">
+                    <div class="modal-image-name" id="modalImageName"></div>
+                    <div class="modal-image-views" id="modalImageViews"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Advanced Gallery System with Real Server Integration
+        class AdvancedGallery {
+            constructor() {
+                // Image URLs from Unsplash
+                this.imageUrls = [
+                    'https://images.unsplash.com/photo-1501854140801-50d01698950b',
+                    'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05',
+                    'https://images.unsplash.com/photo-1469474968028-56623f02e42e',
+                    'https://images.unsplash.com/photo-1505142468610-359e7d316be0',
+                    'https://images.unsplash.com/photo-1418065460487-3e41a6c84dc5',
+                    'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1',
+                    'https://images.unsplash.com/photo-1426604966848-d7adac402bff',
+                    'https://images.unsplash.com/photo-1476820865390-c52aeebb9891',
+                    'https://images.unsplash.com/photo-1441974231531-c6227db76b6e',
+                    'https://images.unsplash.com/photo-1470225620780-dba8ba36b745',
+                    'https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07',
+                    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4',
+                    'https://images.unsplash.com/photo-1472214103451-9374bd1c798e',
+                    'https://images.unsplash.com/photo-1439066615861-d1af74d74000',
+                    'https://images.unsplash.com/photo-1414609245224-afa02bfb3fda',
+                    'https://images.unsplash.com/photo-1447752875215-b2761acb3c5d',
+                    'https://images.unsplash.com/photo-1453728013993-6d66e9c9123a',
+                    'https://images.unsplash.com/photo-1493246507139-91e8fad9978e',
+                    'https://images.unsplash.com/photo-1500375592092-40eb2168fd21'
+                ];
+
+                this.imageNames = [
+                    "Berglandschaft", "Waldpfad", "Meeresblick", "Waldlichtung", "Naturpanorama", "Stadtansicht", 
+                    "Flusslandschaft", "Sonnenaufgang", "Bergkette", "Wasserfall", "Lichtspiel", "Tierwelt",
+                    "Himmelsblick", "Blütenpracht", "Sonnenuntergang", "Küstenlinie", "Nebelmeer", 
+                    "Schneelandschaft", "Herbstfarben", "Frühlingserwachen"
+                ];
+
+                // State management
+                this.allImages = [];
+                this.currentSliderImageId = null;
+                this.currentModalImageId = null;
+                this.sliderInterval = null;
+                this.loadedImages = new Set();
+                this.intersectionObserver = null;
+                this.likeCounters = new Map(); // Store like counter instances
+                this.isAnimating = false;
+
+                // DOM elements
+                this.gallery = document.getElementById('imageGallery');
+                this.modal = document.getElementById('imageModal');
+                this.modalImage = document.getElementById('modalImage');
+                this.sliderImageCurrent = document.getElementById('sliderImageCurrent');
+                this.sliderImageNext = document.getElementById('sliderImageNext');
+
+                this.init();
+            }
+
+            async init() {
+                this.setupLazyLoading();
+                await this.loadAllImages();
+                this.setupEventListeners();
+                await this.delay(1000);
+                this.startSlider();
+                this.startGlobalPolling();
+            }
+
+            // Image generation with server data
+            async generateImageData() {
+                const randomNameIndex = Math.floor(Math.random() * this.imageNames.length);
+                const randomUrlIndex = Math.floor(Math.random() * this.imageUrls.length);
+                
+                const imageId = Date.now() + Math.random();
+                
+                // Get initial data from server
+                const serverData = await this.getImageDataFromServer(imageId);
+                
+                return {
+                    name: this.imageNames[randomNameIndex],
+                    views: serverData.views || Math.floor(Math.random() * 500) + 100,
+                    likes: serverData.likes || Math.floor(Math.random() * 150) + 20,
+                    url: this.imageUrls[randomUrlIndex],
+                    liked: serverData.liked || Math.random() > 0.7, // 30% chance of being liked
+                    id: imageId
+                };
+            }
+
+            async loadAllImages() {
+                for (let i = 0; i < 60; i++) {
+                    const imageData = await this.generateImageData();
+                    this.allImages.push(imageData);
+                    const thumbnail = this.createThumbnail(imageData);
+                    this.gallery.appendChild(thumbnail);
+                }
+                this.observeLazyImages();
+            }
+
+            // Enhanced thumbnail creation with integrated like system
+            createThumbnail(imageData) {
+                const thumbnail = document.createElement('div');
+                thumbnail.className = 'thumbnail';
+                thumbnail.dataset.imageId = imageData.id;
+                
+                const imageUrl = `${imageData.url}?auto=format&fit=crop&w=400&h=300&q=80&id=${imageData.id}`;
+                
+                thumbnail.innerHTML = `
+                    <img data-src="${imageUrl}" alt="${imageData.name}" class="lazy-image" loading="lazy">
+                    <div class="image-overlay">
+                        <div class="like-section">
+                            <button class="like-button-container" data-image-id="${imageData.id}" onclick="gallery.toggleThumbnailLike(event, '${imageData.id}')">
+                                <i class="fas fa-heart heart-icon ${imageData.liked ? 'liked' : ''}"></i>
+                                <div class="counter-container"></div>
+                            </button>
+                        </div>
+                        <div class="info-section">
+                            <div class="image-name">${imageData.name}</div>
+                            <div class="image-views">👁️ ${imageData.views}</div>
+                        </div>
+                    </div>
+                `;
+                
+                // Initialize like counter for thumbnail
+                const counterContainer = thumbnail.querySelector('.counter-container');
+                const likeCounter = new LikeCounter(counterContainer, imageData.likes, 'thumbnail');
+                this.likeCounters.set(`thumbnail-${imageData.id}`, likeCounter);
+                
+                // Click event for modal
+                thumbnail.addEventListener('click', (e) => {
+                    if (!e.target.closest('.like-button-container')) {
+                        this.incrementViews(imageData.id);
+                        const modalImageUrl = `${imageData.url}?auto=format&fit=crop&w=1200&h=900&q=85&id=${imageData.id}`;
+                        this.openModal(modalImageUrl, imageData.name, imageData.id);
+                    }
+                });
+                
+                return thumbnail;
+            }
+
+            // Server communication methods
+            async getImageDataFromServer(imageId) {
+                try {
+                    const response = await fetch(`get_image_data.php?image_id=${imageId}`);
+                    if (response.ok) {
+                        return await response.json();
+                    }
+                } catch (error) {
+                    console.warn('Could not fetch image data from server:', error);
+                }
+                return { views: 0, likes: 0, liked: false };
+            }
+
+            async toggleThumbnailLike(event, imageId) {
+                event.stopPropagation();
+                await this.toggleImageLike(imageId, 'thumbnail');
+            }
+
+            async toggleSliderLike(event) {
+                event.stopPropagation();
+                if (this.currentSliderImageId) {
+                    await this.toggleImageLike(this.currentSliderImageId, 'slider');
+                }
+            }
+
+            async toggleModalLike(event) {
+                event.stopPropagation();
+                if (this.currentModalImageId) {
+                    await this.toggleImageLike(this.currentModalImageId, 'modal');
+                }
+            }
+
+            async toggleImageLike(imageId, source) {
+                if (this.isAnimating) return;
+                
+                this.isAnimating = true;
+                const imageData = this.allImages.find(img => img.id == imageId);
+                if (!imageData) {
+                    this.isAnimating = false;
+                    return;
+                }
+
+                // Optimistic update
+                const wasLiked = imageData.liked;
+                imageData.liked = !imageData.liked;
+                
+                if (imageData.liked) {
+                    imageData.likes++;
+                } else {
+                    imageData.likes--;
+                }
+
+                // Update all UI elements immediately
+                this.updateAllLikeStates(imageId, imageData.liked, imageData.likes);
+
+                // Send to server
+                try {
+                    const response = await fetch('toggle_like.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            image_id: imageId,
+                            action: imageData.liked ? 'like' : 'unlike'
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Server error');
+                    }
+
+                    const result = await response.json();
+                    if (!result.success) {
+                        throw new Error(result.message || 'Server error');
+                    }
+
+                } catch (error) {
+                    console.error('Error toggling like:', error);
+                    // Rollback on error
+                    imageData.liked = wasLiked;
+                    imageData.likes = wasLiked ? imageData.likes + 1 : imageData.likes - 1;
+                    this.updateAllLikeStates(imageId, imageData.liked, imageData.likes);
+                }
+
+                await this.delay(300);
+                this.isAnimating = false;
+            }
+
+            updateAllLikeStates(imageId, isLiked, newCount) {
+                // Update thumbnail
+                const thumbnail = document.querySelector(`.thumbnail[data-image-id="${imageId}"]`);
+                if (thumbnail) {
+                    const heartIcon = thumbnail.querySelector('.heart-icon');
+                    const counter = this.likeCounters.get(`thumbnail-${imageId}`);
+                    
+                    if (heartIcon) {
+                        heartIcon.classList.toggle('liked', isLiked);
+                        heartIcon.classList.add('pulse');
+                        setTimeout(() => heartIcon.classList.remove('pulse'), 600);
+                    }
+                    if (counter) {
+                        counter.updateCount(newCount);
+                    }
+                }
+
+                // Update slider
+                if (this.currentSliderImageId == imageId) {
+                    const sliderHeartIcon = document.getElementById('sliderHeartIcon');
+                    const sliderCounter = this.likeCounters.get(`slider-${imageId}`);
+                    
+                    if (sliderHeartIcon) {
+                        sliderHeartIcon.classList.toggle('liked', isLiked);
+                        sliderHeartIcon.classList.add('pulse');
+                        setTimeout(() => sliderHeartIcon.classList.remove('pulse'), 600);
+                    }
+                    if (sliderCounter) {
+                        sliderCounter.updateCount(newCount);
+                    }
+                }
+
+                // Update modal
+                if (this.currentModalImageId == imageId) {
+                    const modalHeartIcon = document.getElementById('modalHeartIcon');
+                    const modalCounter = this.likeCounters.get(`modal-${imageId}`);
+                    
+                    if (modalHeartIcon) {
+                        modalHeartIcon.classList.toggle('liked', isLiked);
+                        modalHeartIcon.classList.add('pulse');
+                        setTimeout(() => modalHeartIcon.classList.remove('pulse'), 600);
+                    }
+                    if (modalCounter) {
+                        modalCounter.updateCount(newCount);
+                    }
+                }
+            }
+
+            // Enhanced slider with synchronized like system
+            async updateSlider() {
+                if (this.allImages.length === 0) return;
+
+                const current = document.querySelector('.slider-image.current');
+                const next = document.querySelector('.slider-image.next');
+                const overlay = document.querySelector('.slider-overlay');
+
+                if (!current || !next) return;
+
+                // Hide overlay during transition
+                overlay.classList.add("hidden");
+
+                const randomIndex = Math.floor(Math.random() * this.allImages.length);
+                const imageData = this.allImages[randomIndex];
+                const nextImageUrl = `${imageData.url}?auto=format&fit=crop&w=800&h=600&q=80&id=${imageData.id}`;
+
+                const preloader = new Image();
+                preloader.onload = () => {
+                    // Prepare next image
+                    next.style.transition = 'none';
+                    next.src = nextImageUrl;
+                    next.alt = imageData.name;
+                    next.style.transform = 'translateY(100%)';
+
+                    requestAnimationFrame(() => {
+                        // Start transition
+                        next.style.transition = '';
+                        current.style.transition = '';
+                        current.style.transform = 'translateY(-100%)';
+                        next.style.transform = 'translateY(0)';
+                    });
+
+                    setTimeout(() => {
+                        // Swap elements
+                        current.classList.remove('current');
+                        current.classList.add('next');
+                        next.classList.remove('next');
+                        next.classList.add('current');
+
+                        current.style.transition = 'none';
+                        current.style.transform = 'translateY(100%)';
+
+                        // Update slider UI and like counter
+                        this.updateSliderInfo(imageData);
+                        
+                        // Show overlay again
+                        overlay.classList.remove("hidden");
+                    }, 820);
+                };
+                preloader.src = nextImageUrl;
+            }
+
+            updateSliderInfo(imageData) {
+                this.currentSliderImageId = imageData.id;
+                
+                // Update text info
+                document.getElementById('sliderImageName').textContent = imageData.name;
+                document.getElementById('sliderImageViews').textContent = `👁️ ${imageData.views}`;
+                
+                // Update heart icon
+                const sliderHeartIcon = document.getElementById('sliderHeartIcon');
+                sliderHeartIcon.classList.toggle('liked', imageData.liked);
+                
+                // Create/update like counter for slider
+                const sliderCounterContainer = document.getElementById('sliderCounterContainer');
+                if (this.likeCounters.has(`slider-${imageData.id}`)) {
+                    // Update existing counter
+                    const counter = this.likeCounters.get(`slider-${imageData.id}`);
+                    counter.updateCount(imageData.likes);
+                } else {
+                    // Create new counter
+                    sliderCounterContainer.innerHTML = '';
+                    const likeCounter = new LikeCounter(sliderCounterContainer, imageData.likes, 'slider');
+                    this.likeCounters.set(`slider-${imageData.id}`, likeCounter);
+                }
+            }
+
+            startSlider() {
+                if (this.allImages.length > 0) {
+                    const firstImageData = this.allImages[Math.floor(Math.random() * this.allImages.length)];
+                    const firstImageUrl = `${firstImageData.url}?auto=format&fit=crop&w=800&h=600&q=80&id=${firstImageData.id}`;
+
+                    // Set initial image without transition
+                    this.sliderImageCurrent.style.transition = 'none';
+                    this.sliderImageNext.style.transition = 'none';
+                    this.sliderImageCurrent.src = firstImageUrl;
+                    this.sliderImageCurrent.alt = firstImageData.name;
+                    this.sliderImageCurrent.style.transform = 'translateY(0)';
+                    this.sliderImageNext.style.transform = 'translateY(100%)';
+
+                    // Restore transitions
+                    requestAnimationFrame(() => {
+                        this.sliderImageCurrent.style.transition = '';
+                        this.sliderImageNext.style.transition = '';
+                    });
+
+                    this.updateSliderInfo(firstImageData);
+                }
+                
+                // Start auto-rotation every 8 seconds
+                this.sliderInterval = setInterval(() => this.updateSlider(), 8000);
+            }
+
+            // View increment with server sync
+            async incrementViews(imageId) {
+                const imageData = this.allImages.find(img => img.id == imageId);
+                if (imageData) {
+                    imageData.views++;
+                    this.updateViewsDisplay(imageId);
+                    
+                    // Send to server
+                    try {
+                        await fetch('increment_view.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                image_id: imageId
+                            })
+                        });
+                    } catch (error) {
+                        console.error('Error incrementing view:', error);
+                    }
+                }
+            }
+
+            updateViewsDisplay(imageId) {
+                const imageData = this.allImages.find(img => img.id == imageId);
+                if (!imageData) return;
+
+                // Update thumbnail
+                const thumbnail = document.querySelector(`.thumbnail[data-image-id="${imageId}"]`);
+                if (thumbnail) {
+                    const viewsElement = thumbnail.querySelector('.image-views');
+                    if (viewsElement) {
+                        viewsElement.textContent = `👁️ ${imageData.views}`;
+                    }
+                }
+
+                // Update slider
+                if (this.currentSliderImageId == imageId) {
+                    document.getElementById('sliderImageViews').textContent = `👁️ ${imageData.views}`;
+                }
+
+                // Update modal
+                if (this.currentModalImageId == imageId) {
+                    document.getElementById('modalImageViews').textContent = `👁️ ${imageData.views}`;
+                }
+            }
+
+            // Modal functions
+            openModal(imageSrc, imageName, imageId) {
+                this.currentModalImageId = imageId;
+                const imageData = this.allImages.find(img => img.id == imageId);
+                
+                this.modalImage.src = imageSrc;
+                this.modalImage.alt = imageName;
+                document.getElementById('modalImageName').textContent = imageName;
+                document.getElementById('modalImageViews').textContent = `👁️ ${imageData.views}`;
+                
+                // Update heart icon
+                const modalHeartIcon = document.getElementById('modalHeartIcon');
+                modalHeartIcon.classList.toggle('liked', imageData.liked);
+                
+                // Create/update like counter for modal
+                const modalCounterContainer = document.getElementById('modalCounterContainer');
+                modalCounterContainer.innerHTML = '';
+                const likeCounter = new LikeCounter(modalCounterContainer, imageData.likes, 'modal');
+                this.likeCounters.set(`modal-${imageId}`, likeCounter);
+                
+                this.modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+
+            openModalFromSlider() {
+                if (this.currentSliderImageId) {
+                    const imageData = this.allImages.find(img => img.id == this.currentSliderImageId);
+                    if (imageData) {
+                        this.incrementViews(this.currentSliderImageId);
+                        const imageUrl = `${imageData.url}?auto=format&fit=crop&w=1200&h=900&q=85&id=${imageData.id}`;
+                        this.openModal(imageUrl, imageData.name, imageData.id);
+                    }
+                }
+            }
+
+            closeModal() {
+                this.modal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+                this.currentModalImageId = null;
+            }
+
+            // Lazy loading system
+            setupLazyLoading() {
+                const imageOptions = {
+                    threshold: 0.1,
+                    rootMargin: '200px 0px 200px 0px'
+                };
+
+                this.intersectionObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        const img = entry.target;
+                        
+                        if (entry.isIntersecting && img.dataset.src) {
+                            const tempImg = new Image();
+                            tempImg.onload = () => {
+                                img.src = img.dataset.src;
+                                img.removeAttribute('data-src');
+                                this.loadedImages.add(img);
+                                this.intersectionObserver.unobserve(img);
+                            };
+                            tempImg.src = img.dataset.src;
+                        }
+                    });
+                }, imageOptions);
+            }
+
+            observeLazyImages() {
+                const lazyImages = this.gallery.querySelectorAll('img[data-src]');
+                lazyImages.forEach(img => {
+                    this.intersectionObserver.observe(img);
+                });
+            }
+
+            // Event listeners
+            setupEventListeners() {
+                // Modal close events
+                this.modal.addEventListener('click', (e) => {
+                    if (e.target === this.modal) {
+                        this.closeModal();
+                    }
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.closeModal();
+                    }
+                });
+
+                // Global method assignments
+                window.gallery = this;
+                window.openModalFromSlider = () => this.openModalFromSlider();
+                window.toggleSliderLike = (event) => this.toggleSliderLike(event);
+                window.toggleModalLike = (event) => this.toggleModalLike(event);
+            }
+
+            // Global polling for real-time updates
+            startGlobalPolling() {
+                setInterval(async () => {
+                    await this.checkForUpdates();
+                }, 10000); // Check every 10 seconds
+            }
+
+            async checkForUpdates() {
+                try {
+                    const response = await fetch('get_updates.php');
+                    if (response.ok) {
+                        const updates = await response.json();
+                        this.applyUpdates(updates);
+                    }
+                } catch (error) {
+                    console.warn('Could not check for updates:', error);
+                }
+            }
+
+            applyUpdates(updates) {
+                updates.forEach(update => {
+                    const imageData = this.allImages.find(img => img.id == update.image_id);
+                    if (imageData) {
+                        if (update.likes !== undefined) {
+                            imageData.likes = update.likes;
+                            this.updateAllLikeCountersForImage(imageData.id, imageData.likes);
+                        }
+                        if (update.views !== undefined) {
+                            imageData.views = update.views;
+                            this.updateViewsDisplay(imageData.id);
+                        }
+                    }
+                });
+            }
+
+            updateAllLikeCountersForImage(imageId, newCount) {
+                // Update all active counters for this image
+                const counters = [
+                    this.likeCounters.get(`thumbnail-${imageId}`),
+                    this.likeCounters.get(`slider-${imageId}`),
+                    this.likeCounters.get(`modal-${imageId}`)
+                ].filter(Boolean);
+
+                counters.forEach(counter => {
+                    counter.updateCount(newCount);
+                });
+            }
+
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+        }
+
+        // Enhanced Like Counter Class
+        class LikeCounter {
+            constructor(container, initialCount, context) {
+                this.container = container;
+                this.count = initialCount;
+                this.context = context;
+                this.digits = [];
+                this.isAnimating = false;
+                
+                this.init();
+            }
+
+            init() {
+                this.createDisplay();
+            }
+
+            createDisplay() {
+                this.container.innerHTML = '';
+                
+                const countStr = this.count.toString();
+                for (let i = 0; i < countStr.length; i++) {
+                    this.createDigit(parseInt(countStr[i]));
+                }
+            }
+
+            createDigit(initialValue) {
+                const digitEl = document.createElement('div');
+                digitEl.className = 'counter-digit';
+                
+                const stripEl = document.createElement('div');
+                stripEl.className = 'digit-strip';
+                
+                // Create digit elements 0-9 twice for smooth rolling
+                for (let i = 0; i < 20; i++) {
+                    const digitDiv = document.createElement('div');
+                    digitDiv.className = 'digit';
+                    digitDiv.textContent = i % 10;
+                    stripEl.appendChild(digitDiv);
+                }
+                
+                digitEl.appendChild(stripEl);
+                this.container.appendChild(digitEl);
+                
+                // Set initial position
+                const digitHeight = this.context === 'thumbnail' ? 24 : (this.context === 'modal' ? 35 : 30);
+                stripEl.style.transform = `translateY(-${initialValue * digitHeight}px)`;
+                
+                const digit = {
+                    element: digitEl,
+                    strip: stripEl,
+                    value: initialValue,
+                    position: initialValue
+                };
+                
+                this.digits.push(digit);
+                return digit;
+            }
+
+            updateCount(newCount) {
+                if (this.isAnimating || newCount === this.count) return;
+                
+                this.isAnimating = true;
+                
+                // Add pulse effect to container
+                this.container.classList.add('pulse');
+                setTimeout(() => {
+                    this.container.classList.remove('pulse');
+                }, 300);
+                
+                const oldCount = this.count;
+                this.count = newCount;
+                
+                this.animateToNewCount(oldCount, newCount);
+                
+                setTimeout(() => {
+                    this.isAnimating = false;
+                }, 600);
+            }
+
+            animateToNewCount(oldCount, newCount) {
+                const newStr = newCount.toString();
+                const oldStr = oldCount.toString();
+                
+                // Handle digit count changes
+                if (newStr.length > oldStr.length) {
+                    // Add new digits
+                    const digitsToAdd = newStr.length - oldStr.length;
+                    for (let i = 0; i < digitsToAdd; i++) {
+                        const newDigit = this.createDigit(0);
+                        this.container.insertBefore(newDigit.element, this.container.firstChild);
+                        this.digits.unshift(newDigit);
+                    }
+                } else if (newStr.length < oldStr.length) {
+                    // Remove digits
+                    const digitsToRemove = oldStr.length - newStr.length;
+                    for (let i = 0; i < digitsToRemove; i++) {
+                        const removedDigit = this.digits.shift();
+                        removedDigit.element.remove();
+                    }
+                }
+                
+                // Animate each digit
+                for (let i = 0; i < newStr.length; i++) {
+                    const digit = this.digits[i];
+                    const newValue = parseInt(newStr[i]);
+                    
+                    if (digit) {
+                        setTimeout(() => {
+                            this.animateDigit(digit, newValue);
+                        }, i * 50);
+                    }
+                }
+            }
+
+            animateDigit(digit, newValue) {
+                const digitHeight = this.context === 'thumbnail' ? 24 : (this.context === 'modal' ? 35 : 30);
+                
+                if (digit.value === 9 && newValue === 0) {
+                    // Handle rollover animation
+                    digit.position = 10;
+                    digit.strip.style.transform = `translateY(-${digit.position * digitHeight}px)`;
+                    
+                    setTimeout(() => {
+                        digit.strip.style.transition = 'none';
+                        digit.position = 0;
+                        digit.strip.style.transform = 'translateY(0px)';
+                        
+                        setTimeout(() => {
+                            digit.strip.style.transition = '';
+                        }, 50);
+                    }, 400);
+                    
+                    digit.value = 0;
+                } else {
+                    // Normal animation
+                    digit.position = newValue;
+                    digit.strip.style.transform = `translateY(-${digit.position * digitHeight}px)`;
+                    digit.value = newValue;
+                }
+            }
+        }
+
+        // Initialize the gallery
+        document.addEventListener('DOMContentLoaded', () => {
+            new AdvancedGallery();
+        });
+    </script>
+</body>
+</html>
