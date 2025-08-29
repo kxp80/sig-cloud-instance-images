@@ -1,6 +1,17 @@
-# CentOS Cloud SIG image repository.
+Advanced Social Interactive Gallery
 
-Master repository is for scripts or appropriate documentation. Images are
-branched per major version.
+Lokal starten (mit PHP Built-in Server):
 
-Images are generated from kickstart scripts in the [sig-cloud-instance-build](https://github.com/CentOS/sig-cloud-instance-build/) repository.
+1. PHP installieren (falls nicht vorhanden).
+2. Im Projektverzeichnis starten:
+
+```bash
+php -S 0.0.0.0:8000 -t /workspace
+```
+
+3. Im Browser öffnen: `http://localhost:8000/`
+
+Server-API:
+- Endpoint: `/api/api.php`
+- Aktionen: `get`, `get_many`, `like`, `unlike`, `view`
+- Speicherung: Text-Dateien unter `/workspace/data/*.txt` (Format: `likes=0`, `views=0`)
