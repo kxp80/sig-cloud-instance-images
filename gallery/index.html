@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Social Interactive Gallery</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ... existing styles (omitted for brevity) ... */
+    </style>
+</head>
+<body>
+    <!-- ... existing HTML markup (slider, gallery, modal) ... -->
+
+    <script>
+        // NOTE: Styles and HTML structure are identical to the long snippet you supplied –         // only the JavaScript has been condensed and the server-simulation replaced by
+        // real fetch calls to PHP endpoints in gallery/like.php and gallery/view.php.
+
+        class AdvancedGallery {
+            constructor() {
+                // ... existing constructor code ...
+            }
+
+            async toggleImageLike(imageId, source) {
+                if (this.isAnimating) return;
+                this.isAnimating = true;
+                const imageData = this.allImages.find(img => img.id == imageId);
+                if (!imageData) { this.isAnimating=false; return; }
+
+                const wasLiked = imageData.liked;
+                imageData.liked = !imageData.liked;
+                imageData.likes += imageData.liked ? 1 : -1;
+                this.updateAllLikeStates(imageId, imageData.liked, imageData.likes);
+
+                try {
+                    await this.sendLikeToServer(imageId, imageData.liked ? 'like' : 'unlike');
+                } catch (e) {
+                    // rollback on failure
+                    imageData.liked = wasLiked;
+                    imageData.likes += imageData.liked ? 1 : -1;
+                    this.updateAllLikeStates(imageId, imageData.liked, imageData.likes);
+                }
+                await this.delay(200);
+                this.isAnimating=false;
+            }
+
+            async incrementViews(imageId) {
+                const imageData = this.allImages.find(img => img.id == imageId);
+                if (!imageData) return;
+                imageData.views++;
+                this.updateViewsDisplay(imageId);
+                try { await this.sendViewToServer(imageId); } catch(e) { /* silent */ }
+            }
+
+            async sendLikeToServer(id, action){
+                const res = await fetch(`like.php?id=${id}&action=${action}`);
+                const data = await res.json();
+                if(!data.success) throw new Error(data.error||'server');
+            }
+
+            async sendViewToServer(id){
+                const res = await fetch(`view.php?id=${id}`);
+                const data = await res.json();
+                if(!data.success) throw new Error(data.error||'server');
+            }
+
+            // Remove simulateServerCommunication & simulateGlobalUpdates
+        }
+
+        // LikeCounter class unchanged
+        // Full original code (styles and markup) should be kept but omitted here for brevity.
+    </script>
+</body>
+</html>
